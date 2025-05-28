@@ -1,0 +1,17 @@
+# Build artifacts
+build/
+*.o
+*.bin
+*.iso
+
+# IDE files
+.vscode/launch.json
+.vscode/tasks.json
+
+# Analysis reports
+*.xml
+*_report.md
+
+# OS specific
+.DS_Store
+Thumbs.db
