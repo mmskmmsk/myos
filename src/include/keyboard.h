@@ -39,4 +39,9 @@ char keyboard_get_char(void);
 // キーバッファに文字があるか確認
 uint8_t keyboard_has_key(void);
 
+// キーボード割り込みハンドラ
+void keyboard_handler(void);
+
+
+
 #endif // KEYBOARD_H

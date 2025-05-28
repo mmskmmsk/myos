@@ -21,6 +21,8 @@ size_t strlen(const char *s) {
 	return len;
 }
 
+
+
 char *strcat(char *dest, const char *src) {
 	char *d = dest;
 	while (*d) d++; // destの末尾に移動

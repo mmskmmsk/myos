@@ -23,4 +23,8 @@ void memcpy(void* dest, const void* src, size_t size);
 // メモリの統計情報を表示
 void memory_stats(void);
 
+void int_to_string(uint32_t value, char* buffer);
+
+void print_size(size_t size, char* buffer);
+
 #endif // MEMORY_H

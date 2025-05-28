@@ -65,7 +65,7 @@ static char buffer_get() {
 }
 
 // キーボード割り込みハンドラ
-static void keyboard_handler() {
+void keyboard_handler() {
 	// キーボードからスキャンコードを取得
 	uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
