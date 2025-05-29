@@ -2,6 +2,7 @@
 global start
 extern kernel_main  ; C言語のカーネル関数
 
+; startラベルを.textセクションの最初に配置
 section .text
 bits 32
 start:

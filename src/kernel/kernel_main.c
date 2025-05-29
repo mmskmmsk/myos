@@ -1,38 +1,23 @@
-// kernel_main.c - 拡張されたカーネルのメイン関数
-#include "../include/interrupt.h"
+// kernel_main.c - 完全ポーリング版
 #include "../include/keyboard.h"
 #include "../include/memory.h"
 #include "../include/screen.h"
 #include "../include/serial.h"
 #include "../include/string.h"
-#include "../include/timer.h"
-
 
 // カーネルのメイン関数
 void kernel_main(void) {
-    // 割り込みを無効化
-    interrupt_disable();
-    
     // 画面の初期化
     screen_init();
     
     // メモリ管理の初期化
     memory_init();
     
-    // 割り込み処理の初期化
-    interrupt_init();
-    
-    // キーボードの初期化
+    // キーボードの初期化（ポーリングのみ）
     keyboard_init();
-    
-    // タイマーの初期化（100Hz）
-    timer_init(100);
     
     // シリアルポートの初期化
     serial_init(SERIAL_COM1);
-    
-    // 割り込みを有効化
-    interrupt_enable();
     
     // ウェルカムメッセージ
     screen_write("Welcome to ", vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
@@ -40,11 +25,11 @@ void kernel_main(void) {
     screen_write("OS", vga_entry_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK));
     screen_write(" v1.0!\n", vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
     
-    screen_write("A minimal operating system with advanced features.\n", 
+    screen_write("A minimal operating system with polling-based I/O.\n", 
                 vga_entry_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
     
     // シリアルにもメッセージを送信
-    serial_write(SERIAL_COM1, "MyOS v1.0 - Serial communication active\r\n");
+    serial_write(SERIAL_COM1, "MyOS v1.0 - Polling mode active\r\n");
     
     // シンプルなコマンドライン
     screen_newline();
@@ -60,12 +45,15 @@ void kernel_main(void) {
         // コマンド入力を処理
         cmd_pos = 0;
 
-		// コマンド入力開始時のカースト位置を記録
-		int prompt_x, prompt_y;
-		screen_get_cursor(&prompt_x, &prompt_y);
+        // コマンド入力開始時のカーソル位置を記録
+        int prompt_x, prompt_y;
+        screen_get_cursor(&prompt_x, &prompt_y);
 
         while (1) {
-            // キーボード入力を処理（割り込み駆動）
+            // ポーリングでキーボード入力を処理
+            keyboard_process();
+
+            // キーボード入力を処理
             if (keyboard_has_key()) {
                 char c = keyboard_get_char();
                 
@@ -75,43 +63,44 @@ void kernel_main(void) {
                     screen_newline();
                     break;
                 }
-				// バックスペースで文字削除
-				else if (c == '\b') {
-					if (cmd_pos > 0) {
-						cmd_pos--;
-						// カーソル位置を取得
-						int cursor_x, cursor_y;
-						screen_get_cursor(&cursor_x, &cursor_y);
+                // バックスペースで文字削除
+                else if (c == '\b') {
+                    if (cmd_pos > 0) {
+                        cmd_pos--;
+                        // カーソル位置を取得
+                        int cursor_x, cursor_y;
+                        screen_get_cursor(&cursor_x, &cursor_y);
 
-						// カーソル位置がプロンプトの位置より下の場合
-						if (cursor_x == 0 && cursor_y > prompt_y) {
-							cursor_y--;
-							cursor_x = VGA_WIDTH - 1;
-							screen_set_cursor(cursor_x, cursor_y);
-							screen_put_char(' ', vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
-							screen_set_cursor(cursor_x, cursor_y);
-						}
-						else if (cursor_x > 1 || cursor_y > prompt_y) {
-							// 通常のバックスペース処理
-							cursor_x--;
-							screen_set_cursor(cursor_x, cursor_y);
-							screen_put_char(' ', vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
-							screen_set_cursor(cursor_x, cursor_y);
-						}
-						
-					}
-				}
+                        // カーソル位置がプロンプトの位置より下の場合
+                        if (cursor_x == 0 && cursor_y > prompt_y) {
+                            cursor_y--;
+                            cursor_x = VGA_WIDTH - 1;
+                            screen_set_cursor(cursor_x, cursor_y);
+                            screen_put_char(' ', vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
+                            screen_set_cursor(cursor_x, cursor_y);
+                        }
+                        else if (cursor_x > 1 || cursor_y > prompt_y) {
+                            // 通常のバックスペース処理
+                            cursor_x--;
+                            screen_set_cursor(cursor_x, cursor_y);
+                            screen_put_char(' ', vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
+                            screen_set_cursor(cursor_x, cursor_y);
+                        }
+                    }
+                }
                 // 通常の文字入力
                 else if (cmd_pos < 255 && c >= ' ' && c <= '~') {
                     command[cmd_pos++] = c;
                 }
             }
             
-            // CPUを少し休ませる
-            asm volatile("hlt");
+            // CPUを少し休ませる（ポーリング間隔調整）
+            for (int i = 0; i < 10000; i++) {
+                asm volatile("nop");
+            }
         }
         
-        // コマンドを解釈して実行
+        // コマンドを解釈して実行（既存のコマンド処理をそのまま維持）
         if (cmd_pos > 0) {
             // helpコマンド
             if (strcmp(command, "help") == 0) {

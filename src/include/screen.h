@@ -26,6 +26,9 @@
  #define VGA_COLOR_LIGHT_BROWN   14
  #define VGA_COLOR_WHITE         15
 
+ // 黄色のエイリアス（便利のため）
+ #define VGA_COLOR_YELLOW        VGA_COLOR_LIGHT_BROWN
+
 // 前景色と背景色から色属性を作成
 static inline uint8_t vga_entry_color(uint8_t fg, uint8_t bg) {
 	return fg | (bg << 4);

@@ -11,4 +11,4 @@ size_t strlen(const char *s2);
 // 文字列を連結
 char *strcat(char *dest, const char *src);
 
-#endif
+#endif // STRING_H

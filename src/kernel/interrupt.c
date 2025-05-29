@@ -4,10 +4,8 @@
 #include "../include/keyboard.h"
 #include "../include/memory.h"
 #include "../include/screen.h"
+#include "../include/timer.h"
 
-
-// interrupt.c の先頭に追加
-extern void timer_handler(void);
 
 // IDTのエントリ数
 #define IDT_SIZE 256
@@ -94,7 +92,8 @@ void interrupt_init(void) {
     asm volatile("lidt %0" : : "m" (idtp));
     
     // タイマーとキーボード割り込みを有効化
-    outb(PIC1_DATA, 0xFC); // IRQ0とIRQ1のみ有効
+    // 0xFC → 0xFE に変更（キーボードのみ有効、タイマー無効）
+    outb(PIC1_DATA, 0xFE); // IRQ1（キーボード）のみ有効
 }
 
 // 割り込みを有効化

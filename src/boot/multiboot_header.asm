@@ -1,15 +1,16 @@
-; multiboot_header.asm - GRUBがカーネルを認識するためのマルチブートヘッダ
+; multiboot_header.asm - 修正されたマルチブート2ヘッダー
 section .multiboot_header
+align 8
 header_start:
-    ; マジックナンバー
-    dd 0xe85250d6                ; マルチブート2のマジック
-    dd 0                         ; アーキテクチャ 0 (32ビット保護モード i386)
-    dd header_end - header_start ; ヘッダのサイズ
-    ; チェックサム
-    dd 0x100000000 - (0xe85250d6 + 0 + (header_end - header_start))
+    ; マルチブート2のマジックナンバー
+    dd 0xe85250d6                ; マジック（リトルエンディアン）
+    dd 0                         ; アーキテクチャ（i386 = 0）
+    dd header_end - header_start ; ヘッダー長
+    dd -(0xe85250d6 + 0 + (header_end - header_start))  ; チェックサム
 
-    ; 必須の終了タグ
-    dw 0    ; タイプ
+    ; 終了タグ（必須）
+    align 8
+    dw 0    ; タイプ（終了）
     dw 0    ; フラグ
     dd 8    ; サイズ
 header_end:

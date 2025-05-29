@@ -27,6 +27,12 @@
 #define KEY_NUMLOCK     0x45
 #define KEY_SCROLLLOCK  0x46
 
+// キーボードデータポート
+#define KEYBOARD_DATA_PORT 0x60
+
+// キーバッファのサイズ
+#define KEYBOARD_BUFFER_SIZE 256
+
 // キーボードを初期化
 void keyboard_init(void);
 

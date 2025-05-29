@@ -57,17 +57,27 @@ $(BUILD_DIR)/kernel.bin: $(OBJ) | $(BUILD_DIR)
 #	ISOイメージの作成
 $(BUILD_DIR)/myos.iso: $(BUILD_DIR)/kernel.bin $(ISO_DIR)
 	cp $(BUILD_DIR)/kernel.bin $(ISO_DIR)/boot/
-	echo 'set timeout=0' > $(ISO_DIR)/boot/grub/grub.cfg
+	echo 'set timeout=3' > $(ISO_DIR)/boot/grub/grub.cfg
 	echo 'set default=0' >> $(ISO_DIR)/boot/grub/grub.cfg
-	echo 'menuentry "MyOS" {' >> $(ISO_DIR)/boot/grub/grub.cfg
-	echo '	multiboot2 /boot/kernel.bin' >> $(ISO_DIR)/boot/grub/grub.cfg
-	echo '	boot' >> $(ISO_DIR)/boot/grub/grub.cfg
+	echo '' >> $(ISO_DIR)/boot/grub/grub.cfg
+	echo 'menuentry "MyOS v1.0" {' >> $(ISO_DIR)/boot/grub/grub.cfg
+	echo '    multiboot2 /boot/kernel.bin' >> $(ISO_DIR)/boot/grub/grub.cfg
+	echo '    boot' >> $(ISO_DIR)/boot/grub/grub.cfg
 	echo '}' >> $(ISO_DIR)/boot/grub/grub.cfg
 	grub-mkrescue -o $@ $(ISO_DIR)
 
 #	実行
+# 実行部分を以下に置き換え
 run: $(BUILD_DIR)/myos.iso
-	$(QEMU) -cdrom $(BUILD_DIR)/myos.iso
+	$(QEMU) -cdrom $(BUILD_DIR)/myos.iso -boot d -m 512
+
+# デバッグ用の実行
+run-debug: $(BUILD_DIR)/myos.iso
+	$(QEMU) -cdrom $(BUILD_DIR)/myos.iso -boot d -m 512 -monitor stdio
+
+# シリアルポート付きで実行
+run-serial: $(BUILD_DIR)/myos.iso
+	$(QEMU) -cdrom $(BUILD_DIR)/myos.iso -boot d -m 512 -serial stdio
 
 #	クリーン
 clean:

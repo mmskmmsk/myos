@@ -10,6 +10,9 @@ void timer_init(uint32_t frequency);
 // 指定したミリ秒待機
 void timer_sleep(uint32_t ms);
 
+// タイマー割り込みハンドラ
+void timer_handler(void);
+
 // タイマーカウントを取得
 uint32_t timer_get_ticks(void);
 

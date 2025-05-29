@@ -4,11 +4,7 @@
 #include "../include/screen.h"
 #include "../include/stddef.h"
 
-// キーボードデータポート
-#define KEYBOARD_DATA_PORT 0x60
 
-// キーバッファのサイズ
-#define KEYBOARD_BUFFER_SIZE 256
 
 // キーバッファ（キー入力を保存する）
 static char key_buffer[KEYBOARD_BUFFER_SIZE];
@@ -18,7 +14,7 @@ static size_t buffer_read = 0;
 
 // US/UKキーボードのスキャンコードからASCIIへのマッピング
 static const char scancode_to_ascii[] = {
-	0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
+	0, 27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
 	'\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
 	0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',
 	0, '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0,
@@ -31,7 +27,7 @@ static uint8_t shift_pressed = 0;
 
 // US/UKキーボードのシフト時のスキャンコードからASCIIへのマッピング
 static const char scancode_to_ascii_shift[] = {
-	0, 0, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
+	0, 27, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
 	'\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
 	0, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~',
 	0, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0,
@@ -65,46 +61,48 @@ static char buffer_get() {
 }
 
 // キーボード割り込みハンドラ
-void keyboard_handler() {
-	// キーボードからスキャンコードを取得
-	uint8_t scancode = inb(KEYBOARD_DATA_PORT);
+void keyboard_handler(void) {
+    // キーボードからスキャンコードを取得
+    uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
-	// キーを離したイベント（最上位ビットが1）
-	if (scancode & 0x80) {
-		scancode &= 0x7F; // 最上位ビットをクリア
+    // キーを離したイベント（最上位ビットが1）
+    if (scancode & 0x80) {
+        scancode &= 0x7F; // 最上位ビットをクリア
 
-		// シフトキーを離した場合
-		if (scancode == KEY_LSHIFT || scancode == KEY_RSHIFT) {
-			shift_pressed = 0;
-		}
-	}
-	// キーを押したイベント
-	else {
-		// シフトキーが押された場合
-		if (scancode == KEY_LSHIFT || scancode == KEY_RSHIFT) {			
-			shift_pressed = 1;
-			return;
-		}
+        // シフトキーを離した場合
+        if (scancode == KEY_LSHIFT || scancode == KEY_RSHIFT) {
+            shift_pressed = 0;
+        }
+    }
+    // キーを押したイベント
+    else {
+        // シフトキーが押された場合
+        if (scancode == KEY_LSHIFT || scancode == KEY_RSHIFT) {            
+            shift_pressed = 1;
+            // return を削除してPIC EOI送信を確実に行う
+        }
+        else {
+            // スキャンコードをASCIIに変換
+            char ascii;
+            if (shift_pressed && scancode < sizeof(scancode_to_ascii_shift)) {
+                ascii = scancode_to_ascii_shift[scancode];
+            } else if (scancode < sizeof(scancode_to_ascii)) {
+                ascii = scancode_to_ascii[scancode];
+            } else {
+                ascii = 0; // 不明なスキャンコード
+            }
 
-		// スキャンコードをASCIIに変換
-		char ascii;
-		if (shift_pressed && scancode < sizeof(scancode_to_ascii_shift)) {
-			ascii = scancode_to_ascii_shift[scancode];
-		} else if (scancode < sizeof(scancode_to_ascii)) {
-			ascii = scancode_to_ascii[scancode];
-		} else {
-			ascii = 0; // 不明なスキャンコード
-		}
-
-		// ASCIIが有効な場合、バッファに追加し画面に表示
-		if (ascii) {
-			buffer_put(ascii);
-			if (ascii != '\b') {
-				screen_put_char(ascii, vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
-			}
-			// バックスペースの画面処理はkernel_main.cで完全に制御する
-		}
-	}
+            // ASCIIが有効な場合、バッファに追加し画面に表示
+            if (ascii) {
+                buffer_put(ascii);
+                if (ascii != '\b') {
+                    screen_put_char(ascii, vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
+                }
+            }
+        }
+    }
+    
+    // PIC EOI送信は削除（irq_handlerで処理される）
 }
 
 // キーボードを初期化
